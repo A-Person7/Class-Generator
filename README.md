@@ -29,8 +29,7 @@ In Linux, you can run ```make install`` with super user permissions to copy the 
 
 Alternatively, you can run ```cp cg -d [your path here]``` or use a file explorer to save the script somewhere else, like ~/bin.
 
-This program should be able to run on all operating systems, although you might need to preface this any calls to this script with ```sh``` on non-unix systems that do not respect hashbangs. 
-
+To uninstall this program, run ```make uninstall``` with super user permissions if the script was installed with make. If the program was installed elsewhere, remove the script from there. The script is the only file saved anywhere, so deleting it is all that is necessary to remove the program. 
 
 <H4>Additional notes: </H4>
 
