@@ -1,0 +1,104 @@
+#!/bin/bash
+
+# Class Generator (cg)
+# automates generating c++ class and header files and fills them with boilerplate code
+
+
+# todo - clean up a lot, add functions, get options working
+
+
+hExtension="h"
+cExtension="cpp"
+
+dir=""
+namespace=""
+
+
+# sets name to the first argument passed in
+input=$1
+
+# converts the input into an 'array' of words seperated by spaces so the last word can be grabbed
+name=$(echo "$input" | sed 's/::/ /g')
+
+# sets the name to the last word in the list
+name="${name##* }"
+
+# options analysis
+# todo - fix because this is very unreliable
+while getopts 'h:c:n:d:' OPTION; do
+    case "$OPTION" in
+        h) hExtension=$OPTARG
+            echo "hExtension: $hExtension"
+            ;;
+        c) cExtension=$OPTARG;;
+        n) namespace=$OPTARG;;
+        d) dir=$OPTARG/;;
+        ?) echo "Usage: $0 [-h <hExtension>] [-c <cExtension>] [-n <namespace>] [-d <directory>]"
+            exit 1
+            ;;
+    esac
+done
+shift $(($OPTIND -1))
+
+# if namespace isn't explicitly stated, set it to everything before the name
+if [ -z "$namespace" ]; then
+    end_of_input="lmao_no_one_will_add_this_to_a_namespace"
+    input=$input$end_of_input
+
+    #todo - replace with function for removing things at the end of a string
+    namespace=$(echo $input | sed "s/::$name$end_of_input//g")
+    # in case there is no namespace in the input, erase the name and end_of_input
+    namespace=$(echo $input | sed "s/$name$end_of_input//g")
+
+    # add end of string mark again to test against :: ending the string for some reason
+    # todo - determine how :: ends up at the end of the input
+    namespace=$namespace$end_of_input
+    namespace=$(echo $input | sed "s/::$end_of_input//g")
+    namespace=$(echo $input | sed "s/$end_of_input//g")
+fi
+
+hGuardLower=""
+namespaceDeclaration=""
+namespaceEnd=""
+indent=""
+
+if [ -n "$namespace" ]; then
+    namespaceDeclaration="namespace $namespace {"
+    namespaceEnd="}"
+    hGuardLower=$(printf $namespace | sed 's/::/_/g')_
+    indent="\t"
+fi
+
+if [ -z "$name" ]; then
+    echo "No class name entered"
+    exit 1
+fi
+
+#todo - add a way to pass in namespace as an argument, and add that to header guard definition as well
+#possibly do by passing names in like namespace1/namespace2/actual_name
+
+# sets the name of the header guard definition to the name of the class in uppercase
+hGuardDef="$(echo $hGuardLower$name | tr '[:lower:]' '[:upper:]')_H"
+
+# header boiler plate text (no need for \n because new line defined by this already counts as a new line)
+hText="#ifndef $hGuardDef // begin header guard
+#define $hGuardDef
+
+$namespaceDeclaration
+$indent
+${indent}class $name {
+$indent
+${indent}};
+
+$namespaceEnd
+
+#endif // end of header guard" 
+
+cText="#include \"$name.$hExtension\""
+
+if [ -n "$dir" ]; then
+    mkdir -p $dir
+fi
+
+printf "$hText" > $dir$name.$hExtension
+printf "$cText" > $dir$name.$cExtension
