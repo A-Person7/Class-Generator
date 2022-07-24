@@ -25,7 +25,7 @@ A future update is intended to support being able to change the directory the fi
 
 As a self contained bash script, installation is not required. However, adding the script to your path is recommended for the sake of convenience.
 
-In Linux, you can run ```make install`` with super user permissions to copy the script into your path (in /usr/bin). 
+In Linux, you can run ```make install``` with super user permissions to copy the script into your path (in /usr/bin). 
 
 Alternatively, you can run ```cp cg -t [your path here]``` or use a file explorer to save the script somewhere else, like ~/bin.
 
