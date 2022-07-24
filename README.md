@@ -27,7 +27,7 @@ As a self contained bash script, installation is not required. However, adding t
 
 In Linux, you can run ```make install`` with super user permissions to copy the script into your path (in /usr/bin). 
 
-Alternatively, you can run ```cp cg -d [your path here]``` or use a file explorer to save the script somewhere else, like ~/bin.
+Alternatively, you can run ```cp cg -t [your path here]``` or use a file explorer to save the script somewhere else, like ~/bin.
 
 To uninstall this program, run ```make uninstall``` with super user permissions if the script was installed with make. If the program was installed elsewhere, remove the script from there. The script is the only file saved anywhere, so deleting it is all that is necessary to remove the program. 
 
