@@ -23,6 +23,12 @@ name=$(echo "$input" | sed 's/::/ /g')
 # sets the name to the last word in the list
 name="${name##* }"
 
+# exits the program early if no name is provided
+if [ -z "$name" ]; then
+    echo "No class name entered"
+    exit 1
+fi
+
 # options analysis
 # todo - fix because this is very unreliable
 while getopts 'h:c:n:d:' OPTION; do
@@ -32,7 +38,7 @@ while getopts 'h:c:n:d:' OPTION; do
             ;;
         c) cExtension=$OPTARG;;
         n) namespace=$OPTARG;;
-        d) dir=$OPTARG/;;
+        d) dir=$OPTARG;;
         ?) echo "Usage: $0 [-h <hExtension>] [-c <cExtension>] [-n <namespace>] [-d <directory>]"
             exit 1
             ;;
@@ -40,47 +46,66 @@ while getopts 'h:c:n:d:' OPTION; do
 done
 shift $(($OPTIND -1))
 
+# add to the end of the string so that substitutions only effect the end of the string. 
+# note, this will not work if someone puts the contents of end_of_input in the input string.
+# however, the odds of doing this unintentionally are incredibly low.
+end_of_input="lmao_no_one_will_add_this_to_a_namespace"
+
+# deletes a string at the end of another string. input 1 is the string to delete from, 
+# input 2 is the string to delete. If the string to delete is not at the end of the string, nothing
+# happens. Results are returned using echo.
+function delete_at_end() {
+    target=$1
+    to_delete=$2
+    target=$target$end_of_input
+    temp=$(echo $target | sed "s/$to_delete$end_of_input//")
+    # remove end of input marker as well
+    echo $temp | sed "s/$end_of_input//"
+}
+
 # if namespace isn't explicitly stated, set it to everything before the name
 if [ -z "$namespace" ]; then
-    end_of_input="lmao_no_one_will_add_this_to_a_namespace"
-    input=$input$end_of_input
+    namespace=$input
 
-    #todo - replace with function for removing things at the end of a string
-    namespace=$(echo $input | sed "s/::$name$end_of_input//g")
-    # in case there is no namespace in the input, erase the name and end_of_input
-    namespace=$(echo $input | sed "s/$name$end_of_input//g")
+    # erase the class name from the end of the namespace
+    namespace=$(delete_at_end $namespace $name)
 
-    # add end of string mark again to test against :: ending the string for some reason
-    # todo - determine how :: ends up at the end of the input
-    namespace=$namespace$end_of_input
-    namespace=$(echo $input | sed "s/::$end_of_input//g")
-    namespace=$(echo $input | sed "s/$end_of_input//g")
+    # erase the :: from the end of the namespace
+    namespace=$(delete_at_end $namespace ::)
 fi
 
-hGuardLower=""
+# the header guard definition
+hGuardDef=""
+# if there is a namespace, this is where it's declared. If not, this is kept empty.
 namespaceDeclaration=""
+# ending } of the namespace if there is one.
 namespaceEnd=""
+# indents the class declaration, but only if there is a namespace for the class to be nested in
 indent=""
 
+# if the namespace isn't empty...
 if [ -n "$namespace" ]; then
+    # define the class as being within the namespace
     namespaceDeclaration="namespace $namespace {"
     namespaceEnd="}"
-    hGuardLower=$(printf $namespace | sed 's/::/_/g')_
+
+    # prefix the header guard with the namespace with _ instead of ::. 
+    # the string is capitalized later, so case does not matter.
+    hGuardDef=$(printf $namespace | sed 's/::/_/g')_
+    # if there is a namespace to add, add an indent for the class. If there is not, this is left
+    # blank, meaning the class isn't indented.
     indent="\t"
-fi
 
-if [ -z "$name" ]; then
-    echo "No class name entered"
-    exit 1
+    # sets the directory to the namespace, but only if it hasn't already been specified
+    if [ -z $dir ]; then
+        dir=$(printf $namespace | sed 's/::/\//g')/
+    fi
 fi
-
-#todo - add a way to pass in namespace as an argument, and add that to header guard definition as well
-#possibly do by passing names in like namespace1/namespace2/actual_name
 
 # sets the name of the header guard definition to the name of the class in uppercase
-hGuardDef="$(echo $hGuardLower$name | tr '[:lower:]' '[:upper:]')_H"
+hGuardDef="$(echo $hGuardDef$name | tr '[:lower:]' '[:upper:]')_H"
 
-# header boiler plate text (no need for \n because new line defined by this already counts as a new line)
+# header boiler plate text
 hText="#ifndef $hGuardDef // begin header guard
 #define $hGuardDef
 
@@ -94,8 +119,10 @@ $namespaceEnd
 
 #endif // end of header guard" 
 
+# adds a simple include for the header file just created
 cText="#include \"$name.$hExtension\""
 
+# creates a directory where the namespace is
 if [ -n "$dir" ]; then
     mkdir -p $dir
 fi
