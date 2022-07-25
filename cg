@@ -4,7 +4,8 @@
 # automates generating c++ class and header files and fills them with boilerplate code
 
 
-# todo - clean up a lot, add functions, get options working
+# todo - clean up, get options working, add option to use #pragma once instead of a header guard
+# check naming conventions in this file too
 
 
 hExtension="h"
@@ -12,22 +13,6 @@ cExtension="cpp"
 
 dir=""
 namespace=""
-
-
-# sets name to the first argument passed in
-input=$1
-
-# converts the input into an 'array' of words seperated by spaces so the last word can be grabbed
-name=$(echo "$input" | sed 's/::/ /g')
-
-# sets the name to the last word in the list
-name="${name##* }"
-
-# exits the program early if no name is provided
-if [ -z "$name" ]; then
-    echo "No class name entered"
-    exit 1
-fi
 
 # options analysis
 # todo - fix because this is very unreliable
@@ -44,7 +29,25 @@ while getopts 'h:c:n:d:' OPTION; do
             ;;
     esac
 done
-shift $(($OPTIND -1))
+# shift $(($OPTIND -1))
+
+# sets the input to the first argument passed in. this is what the class name is derived from 
+# (anything after the last ::), and what's before that is used for the namespace
+input=$1
+
+# the name of the class
+# converts the input into an 'array' of words seperated by spaces so the last word can be grabbed
+name=$(echo "$input" | sed 's/::/ /g')
+
+# sets the name to the last word in the list
+name="${name##* }"
+
+# exits the program early if no name is provided
+if [ -z "$name" ]; then
+    echo "No class name entered"
+    exit 1
+fi
+
 
 # add to the end of the string so that substitutions only effect the end of the string. 
 # note, this will not work if someone puts the contents of end_of_input in the input string.
@@ -110,11 +113,9 @@ hText="#ifndef $hGuardDef // begin header guard
 #define $hGuardDef
 
 $namespaceDeclaration
-$indent
 ${indent}class $name {
 $indent
 ${indent}};
-
 $namespaceEnd
 
 #endif // end of header guard" 
